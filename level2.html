@@ -698,28 +698,32 @@
        let finishLines = [];
     let currentFinishLine = 0;
 
-    function showLevelComplete() {
+   function showLevelComplete() {
     const intro = document.getElementById("introContainer");
     const startBtn = document.getElementById("startGameBtn");
     const hint = document.getElementById("k8NextHint");
     const wrapper = document.querySelector(".guide-wrapper");
-    const finalScore = document.getElementById("playerMoney").innerText;
-
+    
+    // CALCULATE LOSS
+    const finalBalance = money; 
+    const totalLost = 1000 - finalBalance;
+    
     currentFinishLine = 0; 
 
+    // Update the dialogue lines
     finishLines = [
-        `Game Complete! You finished with ${finalScore}.`,
+        `Game Complete! You finished with $${finalBalance.toLocaleString()}.`,
+        totalLost > 0 
+            ? `It looks like you lost $${totalLost.toLocaleString()} to scams along the way. 💸` 
+            : "Amazing! You didn't lose a single cent to the scams! 🌟",
         "But in the real world, the stakes are much higher than a game.",
-        "In 2025, victims in Singapore lost over S$840.3 million to more than 33,800 reported scam cases.",
+        "In 2025, victims in Singapore lost over S$840.3 million to scammers.",
         "That's over $2 million lost every single day! 😱",
-        "Phishing scams, like the links you just saw are one of the top 3 most common cases.",
+        "Phishing scams, like the links you just saw, are a major part of that."
     ];
 
-    // --- THE FIX: Reset the styles so it's visible again ---
     intro.style.display = "flex";
     intro.style.opacity = "1"; 
-    
-    // Clear the manual transform/opacity from 'actuallyStartGame'
     wrapper.style.transform = ""; 
     wrapper.style.opacity = "";
     wrapper.classList.remove("active");
@@ -727,13 +731,11 @@
     startBtn.style.display = "none"; 
     hint.style.display = "block";
 
-    // Small delay to let the browser register the class removal before adding it back
     setTimeout(() => {
         wrapper.classList.add("active");
         typeWriter(finishLines[0], "k8Dialogue");
     }, 100);
 }
-
     function nextFinishDialog() {
         const startBtn = document.getElementById("startGameBtn");
         const hint = document.getElementById("k8NextHint");
