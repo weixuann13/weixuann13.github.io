@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Level 1 - The Prize Scam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* 1. The Fade-In Effect */
+        body {
+            width: 960px;
+            height: 540px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: 'Verdana', sans-serif;
+
+            background: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.11)),    
+                        url("background.png");
+            background-size: 100% 120%;
+            background-repeat: no-repeat;
+            background-position: center;
+            backdrop-filter: blur(5px);
+        
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Re-using your HUD Style */
+        .player-status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 40px;
+            border: 3px solid #000;
+        }
+
+        .money-row { color: #2ecc71; font-family: 'Bungee', sans-serif; }
+
+        .mini-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #000;
+            background: #fff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #playerFace {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the photo fills the circle without stretching */
+        }
+
+        #playerName {
+            font-family: 'Bungee', cursive;
+            font-size: 18px;
+            margin-bottom: -5px; 
+        }
+
+        #playerMoney {
+            font-family: 'Bungee', cursive;
+        }
+
+        /* The Scam Popup */
+        .scam-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+       .scam-card {
+            background: white;
+            border: 5px solid #ff1493;
+            border-radius: 20px;
+            padding: 20px;
+            width: 320px; 
+            height: 320px; 
+            box-shadow: 10px 10px 0px #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* This keeps the prize in the middle of the fixed height */
+            justify-content: center; 
+            overflow: hidden;
+        }
+        
+        .choice-btn {
+            padding: 10px 20px;
+            margin: 10px;
+            border: 3px solid #000;
+            border-radius: 10px;
+            font-family: 'Bungee', sans-serif;
+            cursor: pointer;
+        }
+
+        .claim { background: #f1c40f; }
+        .ignore { background: #bdc3c7; }
+
+        @keyframes temptingShake {
+            0%, 70% { transform: rotate(0deg); } /* Wait/Still for 70% of the time */
+            75% { transform: rotate(5deg); }
+            80% { transform: rotate(-5deg); }
+            85% { transform: rotate(5deg); }
+            90% { transform: rotate(-5deg); }
+            95% { transform: rotate(5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .shake-me {
+            animation: temptingShake 2s infinite;
+            background: #f1c40f !important; 
+            box-shadow: 0 4px 0 #b8860b;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 10px auto;
+            flex-shrink: 0;
+            display: flex; 
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes slowDrift {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid #000000;
+            aspect-ratio: 1 / 1; 
+            background: conic-gradient(
+                #ff1493 0deg 60deg, #f1c40f 60deg 120deg, 
+                #2ecc71 120deg 180deg, #3498db 180deg 240deg, 
+                #9b59b6 240deg 300deg, #e67e22 300deg 360deg
+            );
+            /* This makes sure the animation stops exactly where it is */
+            animation: slowDrift 20s linear infinite;
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); 
+            
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: 3px solid #000000;
+            border-radius: 50%;
+            z-index: 100; /* High z-index to stay on top of images */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Bungee', sans-serif;
+            font-size: 10px;
+            pointer-events: none;
+        }
+
+        .wheel-center::after {
+            content: '';
+            position: absolute;
+            top: -14px; /* Adjust this until it touches the border perfectly */
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 15px solid #000000; /* The 'outline' of the arrow */
+        }
+
+        .wheel-center::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid white; /* The 'inside' of the arrow */
+            z-index: 101;
+        }
+
+        .spin-btn {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: #ff1493;
+            color: white;
+            font-family: 'Bungee', sans-serif;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+       .prize-img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center; 
+            object-fit: contain;
+            image-rendering: auto;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); 
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); } /* Grows slightly */
+            100% { transform: scale(1); }
+        }
+
+        .ok-btn {
+            background: #e6a23c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 60px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            
+            display: inline-block; 
+            
+            animation: pulse-animation 1.5s infinite ease-in-out;
+            
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .ok-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .stop-animation {
+            animation: none !important;
+        }
+
+        #tapText {
+            position: absolute;
+            bottom: 10px; /* Pulls it away from the very edge */
+            margin: 0;
+            font-weight: bold;
+            color: #5c5c5c;    /* Lighter grey makes it look smaller/cleaner */
+            font-size: 11px; /* Smaller font size */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #wheelSection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+       #prizeSection {
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between; /* This forces elements to spread out top-to-bottom */
+            height: 100%;
+            width: 100%;
+            padding: 40px 20px 20px 20px; /* More padding at the top for the title */
+            box-sizing: border-box;
+        }
+
+       .prize-main-img {
+            width: 160px; /* Slightly smaller than 180px to save vertical space */
+            height: auto;
+            margin: 10px 0; /* Tightened margins */
+        }
+
+        .close-x {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 18px;
+            color: #bbb;
+            cursor: pointer;
+            line-height: 1; 
+            z-index: 1000;
+        }
+
+        .close-x:hover { color: #333; }
+
+        /* Fix the prize section so it stays inside the white box */
+        #prizeSection {
+            display: none; 
+            text-align: center; 
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box; /* Crucial to keep text inside */
+        }
+
+       #gotItBtn:disabled {
+            background: #bdc3c7 !important; /* Dull Grey */
+            color: #7f8c8d !important;    /* Faded text */
+            cursor: not-allowed;
+            animation: none;
+            opacity: 1; /* Keep it solid so the grey is clear */
+            border: 2px solid #95a5a6;
+        }
+
+        #gotItBtn:not(:disabled) {
+            background: #2ecc71 !important; /* Bright Green - shows it's safe to click */
+            color: white !important;
+            border: none;
+        }
+</style>
+
+<body>
+    <audio id="rouletteSound" src="rouletteSound.mp3" preload="auto"></audio>
+    <audio id="winSound" src="celebration.mp3" preload="auto"></audio>
+    <audio id="winSound" src="money-down.mp3" preload="auto"></audio>
+
+    <div class="player-status">
+        <div class="mini-avatar">
+            <img id="playerFace" src="pfp 1.png" alt="Profile">
+        </div> 
+        <div class="stats-text">
+            <div id="playerName">Y</div>
+            <div class="money-row">💰 <span id="playerMoney">$1,000</span></div>
+        </div>
+    </div>
+
+    <div class="scam-overlay" id="scam1">
+        <div class="scam-card" id="cardContent">
+            <div class="close-x" id="closeBtn" onclick="event.stopPropagation(); makeChoice('ignore')" 
+                style="display: none; z-index: 1000; position: absolute; top: 12px; right: 12px;">✖</div>
+            
+            <div id="wheelSection" onclick="spinWheel()" style="cursor: pointer; width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <h2 id="scamTitle" style="font-family: Arial, sans-serif; color: #ff1493; margin: 0; font-size: 20px;">SPIN TO WIN!</h2>
+                <div class="wheel-container">
+                    <div id="wheel">
+                        <img src="iphone.png" class="prize-img" style="width: 75px; transform: translate(-50%, -50%) rotate(30deg) translateY(-85px) rotate(-30deg);">
+                        <img src="amazon.png" class="prize-img" style="width: 60px; transform: translate(-45%, -50%) rotate(90deg) translateY(-80px) rotate(-90deg);">
+                        <img src="apple watch.png" class="prize-img" style="width: 80px; transform: translate(-50%, -50%) rotate(150deg) translateY(-85px) rotate(-150deg);">
+                        <img src="macbook.png" class="prize-img" style="width: 80px; transform: translate(-48%, -50%) rotate(210deg) translateY(-85px) rotate(-210deg);">
+                        <img src="airpods.png" class="prize-img" style="width: 65px; transform: translate(-50%, -50%) rotate(270deg) translateY(-82px) rotate(-270deg);">
+                        <img src="switch.png" class="prize-img" style="width: 60px; transform: translate(-50%, -50%) rotate(330deg) translateY(-80px) rotate(-330deg);">
+                    </div>
+                    <div class="wheel-center">SPIN</div>
+                </div>
+                <p id="tapText">👆 TAP TO SPIN!</p>
+            </div>
+
+            <div id="prizeSection" style="display: none;">
+                <h1 style="font-size: 20px; color: #333; margin: 0; font-family: 'Bungee', cursive;">IPHONE 15 PRO MAX</h1>
+                <img src="iphone.png" class="prize-main-img">
+                <div style="text-align: center; width: 100%;">
+                    <p style="font-size: 18px; font-weight: 900; color: #333; margin: 0;">Congratulations!</p>
+                    <p style="font-size: 12px; color: #777; margin: 2px 0 15px 0;">Click 'OK' to claim your prize!</p>
+                    <button class="ok-btn" style="width: 80%; padding: 12px; font-size: 18px;" onclick="makeChoice('scam')">OK</button>
+                </div>
+            </div>
+
+        <div id="factSection" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; padding: 15px; box-sizing: border-box; text-align: center;">
+            <div id="k8Talk" style="background: #f0f0f0; border: 2px solid #333; border-radius: 15px; padding: 10px; margin-bottom: 10px; position: relative; font-size: 14px; font-weight: bold;">
+                "Checking the prize link..."
+            </div>
+
+            <div id="factText" style="font-size: 13px; color: #333; line-height: 1.4; margin-bottom: 10px;">
+                </div>
+
+            <button id="gotItBtn" class="ok-btn" style="background: #bdc3c7; padding: 10px 40px; display: none;" onclick="closeScam()">GOT IT!</button>
+        </div>
+    </div> 
+</div> 
+<script>
+    // 1. Load Data from Level 1
+    const savedName = localStorage.getItem("playerName") || "Shopper";
+    const avatarChoice = localStorage.getItem("playerAvatar") || ""; 
+    const name = savedName.charAt(0).toUpperCase() + savedName.slice(1);
+    
+    // Pull the money from Level 1, or default to 1000
+    let money = 1000;
+    let isSpinning = false;
+
+    window.onload = function() {
+        document.getElementById("playerName").innerText = name;
+        document.getElementById("playerMoney").innerText = "$" + money.toLocaleString();
+        const faceImg = document.getElementById("playerFace");
+        
+        if (avatarChoice.startsWith("data:image")) {
+            faceImg.src = avatarChoice;
+            faceImg.style.transform = "scaleX(-1)"; 
+        } else {
+            if (avatarChoice.includes("3")) faceImg.src = "pfp 3.png"; 
+            else if (avatarChoice.includes("2")) faceImg.src = "pfp 2.png";
+            else faceImg.src = "pfp 1.png";
+        }
+    };
+
+    function spinWheel() {
+    const spinSfx = document.getElementById('rouletteSound');
+    const winSfx = document.getElementById('winSound'); // Get the new sound
+
+    spinSfx.volume = 0.2; // 20% volume for the spinning sound
+    winSfx.volume = 0.2;  // 40% volume for the win sound
+
+    if (isSpinning) return;
+    
+    // Start the spinning sound
+    spinSfx.currentTime = 0; 
+    spinSfx.play().catch(e => console.log("Audio blocked"));
+    
+    isSpinning = true;
+    
+    const wheel = document.getElementById("wheel");
+    const tapText = document.getElementById("tapText");
+    const closeBtn = document.getElementById("closeBtn");
+
+    wheel.style.animation = "none";
+    void wheel.offsetWidth; 
+    if (tapText) tapText.style.display = "none";
+
+    const finalRotation = 1800 + 330; 
+    wheel.style.transform = `rotate(${finalRotation}deg)`;
+
+    setTimeout(() => {
+        // 1. Stop the spin sound
+        spinSfx.pause();
+        spinSfx.currentTime = 0;
+
+        // 2. PLAY CELEBRATION SOUND
+        winSfx.play().catch(e => console.log("Win sound blocked"));
+
+        // 3. Confetti and UI swap
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { x: 0.5, y: 0.6 },
+            zIndex: 3000 
+        });
+
+        document.getElementById("wheelSection").style.display = "none";
+        document.getElementById("prizeSection").style.display = "flex";
+        closeBtn.style.display = "block"; 
+    }, 4000); 
+}
+    // This function must be SEPARATE, not inside another function
+    function makeChoice(type) {
+        document.getElementById("prizeSection").style.display = "none";
+        showK8Fact(type);
+    }
+
+    function playSpinSound() {
+    const spinSfx = document.getElementById("rouletteSound");
+    
+    // reset to start if already playing
+    spinSfx.currentTime = 0; 
+    
+    // Play the sound
+    spinSfx.play().catch(e => {
+        console.log("Audio waiting for user interaction");
+    });
+}
+
+    function showK8Fact(type) {
+    const factSec = document.getElementById("factSection");
+    const factText = document.getElementById("factText");
+    const k8Talk = document.getElementById("k8Talk");
+    const gotItBtn = document.getElementById("gotItBtn");
+    const closeBtn = document.getElementById("closeBtn");
+    
+    factSec.style.display = "flex";
+    gotItBtn.style.display = "none";
+    factText.innerHTML = ""; 
+
+    if (type === 'scam') {
+        closeBtn.style.display = "none"; 
+        // STEP 1: Initial realization
+        k8Talk.innerHTML = "🔍 K8 is checking the prize link...";
+        k8Talk.style.color = "#333";
+        
+        setTimeout(() => {
+            // STEP 2: The big warning (This is the text you were missing!)
+            k8Talk.innerHTML = "🚨 WAIT! This is a phishing link! Look at your wallet! They're stealing your money right now!";
+            k8Talk.style.color = "red";
+            
+            // Start the money draining animation 1 second after the warning
+            setTimeout(() => { 
+                drainMoney(500); 
+            }, 1000);
+        }, 2000);
+    } else {
+        // ... (Keep your existing 'ignore' logic here) ...
+        closeBtn.style.display = "block"; 
+        k8Talk.innerHTML = "👀 Good eye! You stayed safe.";
+        factText.innerHTML = `<strong>Tip:</strong> Even real-looking prize wheels can be scams. Always check the link first!`;
+        gotItBtn.style.display = "block";
+        gotItBtn.disabled = false;
+        gotItBtn.innerHTML = "GOT IT!";
+    }
+}
+
+    function drainMoney(amount) {
+        let drained = 0;
+        const moneyDisplay = document.getElementById("playerMoney");
+
+        const moneySfx = new Audio('money-down.mp3'); 
+        moneySfx.volume = 0.3; // Set to 30% volume
+        moneySfx.play();
+        
+        const interval = setInterval(() => {
+            if (drained < amount && money > 0) {
+                money -= 5;
+                drained += 5;
+                moneyDisplay.innerText = "$" + money.toLocaleString();
+                moneyDisplay.style.color = "red";
+            } else {
+                clearInterval(interval);
+                showFinalLesson();
+            }
+        }, 25); 
+    }
+
+    function showFinalLesson() {
+    const factText = document.getElementById("factText");
+    const k8Talk = document.getElementById("k8Talk");
+    const gotItBtn = document.getElementById("gotItBtn");
+    const closeBtn = document.getElementById("closeBtn");
+
+    // 1. Update the text
+    k8Talk.innerHTML = "That was a close one! You have to be more careful... 💳";
+    k8Talk.style.color = "#333";
+    
+    factText.innerHTML = `
+        <div style="color: #d63031; font-size: 18px; margin-bottom: 5px; font-weight: bold;">Got caught! 🎣</div>
+        Clicking 'OK' usually leads to a fake page that asks for bank details. 
+        The prize doesn’t exist and the scammer's goal is to steal your information.
+    `;
+
+    closeBtn.style.display = "none"; 
+    closeBtn.style.pointerEvents = "none"; // This makes it unclickable even if it glitches
+
+    // 2. Show the 'Got It' button
+    gotItBtn.style.display = "block";
+    gotItBtn.disabled = true;
+
+    let timeLeft = 3;
+    gotItBtn.innerHTML = `Loading... (${timeLeft}s)`;
+
+    const countdown = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+            gotItBtn.innerHTML = `Loading... (${timeLeft}s)`;
+        } else {
+            clearInterval(countdown);
+            gotItBtn.disabled = false;
+            gotItBtn.innerHTML = "GOT IT!";
+        }
+    }, 1000);
+}
+
+    function closeScam() {
+    localStorage.setItem("playerMoney", money); 
+    localStorage.setItem("playerName", name);
+    
+    localStorage.setItem("playerAvatar", avatarChoice);
+
+    window.location.href = "level2.html";
+}
+</script>
+</body>
+</html>

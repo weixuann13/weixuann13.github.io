@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Choose Your Character</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+
+    <style>
+        @keyframes boxEntrance {
+        from { 
+            opacity: 0; 
+            transform: scale(0.9) translateY(20px); }
+        to { 
+            opacity: 1; 
+            transform: scale(1) translateY(0); }
+    }
+
+        body {
+            width: 960px;
+            height: 540px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 0px;
+            
+            background: linear-gradient(rgba(255, 255, 255, 0.141), rgba(255, 255, 255, 0.118)),    
+                        url("background.png");
+            background-size: 100% 120%;
+            background-blend-mode: lighten;
+            background-repeat: no-repeat;
+            background-position: center;
+            backdrop-filter: blur(5px); 
+            -webkit-backdrop-filter: blur(8px);
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+            font-family: 'Verdana', sans-serif;
+            }
+
+        #choiceMenu {
+            background: #fcd8e6;
+            padding: 40px;
+            border: 5px solid #000; /* Thicker border */
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            /* Added a heavier shadow to the box itself */
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.15); 
+            animation: boxEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .choice-btn, .camera-btn {
+            font-family: 'Bungee', sans-serif; border: 4px solid #000; color: white;
+            cursor: pointer; box-shadow: 0px 6px 0px #000;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* BIG MENU BUTTONS */
+        .choice-btn { width: 280px; height: 60px; font-size: 18px; border-radius: 12px; background: #ff1493; }
+
+        /* SMALLER SNAP/RETAKE BUTTONS */
+        .camera-btn { width: 180px; height: 50px; font-size: 16px; border-radius: 50px; background: #ff1493; }
+
+        .choice-btn:hover, .camera-btn:hover {
+        background: #ff4da6; transform: scale(1.05) translateY(-5px); box-shadow: 0px 12px 0px #000;
+        }
+
+        .choice-btn:active, .camera-btn:active { transform: scale(0.98) translateY(2px); box-shadow: 0px 3px 0px #000; }
+
+        h2 {
+            font-family: 'Bungee', cursive;
+            color: #ff1493; /* That bright pink */
+            margin: 0 0 15px 0;
+            font-size: 50px; /* Bigger, bolder size */
+            letter-spacing: 2px;
+        }
+
+        input {
+            /* Font Fixes */
+            font-family: 'Verdana', sans-serif; /* Change to 'Bungee' if you want the blocky look */
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+
+            /* Shape & Border Fixes */
+            padding: 12px;
+            width: 220px;
+            border-radius: 12px;
+            
+            /* THE IMPORTANT PART: Overriding browser defaults */
+            border: 4px solid #000;      /* Solid black outline to match buttons */
+            background-color: white;
+            outline: none;               /* Removes the "focused" gray/blue ring */
+            
+            /* Adding a little shadow to match the card style */
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.1); 
+            
+            text-align: center;
+            margin-top: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        input:focus {
+            transform: scale(1.02);      /* Gives a tiny "pop" when you start typing */
+            border-color: #ff1493;       /* Turns pink when active! */
+        }
+
+        /* This fixes the placeholder text color */
+        input::placeholder {
+            color: #bbb;
+            font-weight: normal;
+        }
+
+        .profile-setup {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Layout Locking */
+        #cameraSection {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .camera-wrapper {
+            width: 260px;
+            height: 260px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+       #webcam, #photoPreview {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            border: 6px solid #ff1493;
+            object-fit: cover;
+            transform: scaleX(-1); 
+            box-shadow: 0px 0px 20px rgba(255, 20, 147, 0.4);
+        }
+
+        #photoPreview { transform: scaleX(-1);}
+
+        .action-area {
+            height: 80px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Corner Buttons */
+        .back-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+            background: #333;
+            color: white;
+            padding: 8px 15px;
+            border: 3px solid #000;
+            border-radius: 10px;
+            font-family: 'Bungee';
+            box-shadow: 0px 4px 0px #000;
+            cursor: pointer;
+        }
+
+        .ready-btn {
+            position: absolute;
+            bottom: 30px;
+            right: 40px;
+            background: #ff1493;
+            color: white;
+            padding: 10px 20px;
+            border: 4px solid #000;
+            border-radius: 12px;
+            font-family: 'Bungee';
+            box-shadow: 0px 6px 0px #000;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .back-btn:hover, .ready-btn:hover {
+            transform: scale(1.1) translateY(-3px); /* Slightly bigger scale since they are smaller buttons */
+            box-shadow: 0px 8px 0px #000;
+            filter: brightness(1.1);
+        }
+
+        .back-btn:active, .ready-btn:active {
+            transform: scale(0.95) translateY(2px);
+            box-shadow: 0px 2px 0px #000;
+        }
+
+        #avatarSection {
+            /* Changed display to flex so it's ready to be shown */
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            gap: 10px; /* Tighter gap to pull title down */
+        }
+
+        #avatarSection h2 {
+            font-size: 50px;
+            text-shadow: 2px 2px 0px #ffffff;
+            margin: 0 0 10px 0; /* Pushes the title down from the top */
+        }
+
+        .avatar-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .avatar-card {
+            width: 200px; /* Slightly smaller for better fit */
+            height: 260px; 
+            background: white;
+            border: 5px solid #000;
+            border-radius: 25px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0px 8px 0px #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .avatar-card img {
+            width: 90%; /* Character Image adjustment */
+            height: auto;
+            object-fit: contain;
+        }
+
+        .avatar-card:hover {
+            transform: scale(1.05) translateY(-8px);
+            box-shadow: 0px 12px 0px #000;
+        }
+
+        .avatar-card.selected {
+            background: #ffecf2;
+            border-color: #ff1493;
+            transform: translateY(4px);
+            box-shadow: 0px 4px 0px #000;
+        }
+
+        #avatarNameEntry {
+            display: flex; 
+            justify-content: center;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .camera-guideline {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none; /* So it doesn't block the click */
+        }
+
+        /* The Blinking Animation */
+        @keyframes slowBlink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .camera-tip {
+            font-family: 'Bungee', sans-serif;
+            font-size: 20px;
+            color: #000000;
+            margin-bottom: 15px;
+            text-align: center;
+            animation: slowBlink 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body>
+   <div id="choiceMenu">
+        <h2>WELCOME!</h2>
+        <button class="choice-btn" onclick="showSection('cameraSection')">
+            <span>📸</span> TAKE PHOTO
+        </button>
+        <button class="choice-btn" onclick="showSection('avatarSection')">
+            <span>🎨</span> CHOOSE AVATAR
+        </button>
+    </div>
+
+        <div id="cameraSection">
+        <p class="camera-tip">Center your face in the circle for the best shot!</p>
+
+        <div class="camera-wrapper">
+            <video id="webcam" autoplay playsinline></video>
+            <img id="photoPreview" style="display:none;">
+            <canvas id="photoCanvas" width="250" height="250" style="display:none;"></canvas>
+        </div>
+        
+        <div id="btnGroup" style="display: flex; gap: 10px; justify-content: center; width: 100%; margin-top: 20px;">
+            <button id="snapBtn" class="camera-btn">SNAP</button>
+            <button id="retakeBtn" class="camera-btn" style="display:none; background: #ff9800;">RETAKE</button>
+        </div>
+
+        <div id="nameEntry" style="display:none;">
+            <input type="text" id="playerName" placeholder="Enter Name..." maxlength="10">
+        </div>
+
+        <button class="back-btn" onclick="goBack()">⬅ BACK</button>
+        <button id="readyBtn" class="ready-btn" style="display:none;" onclick="startGame()">READY! ➜</button>
+    </div>
+
+        <div id="avatarSection">
+        <h2>CHOOSE CHARACTER</h2>
+        
+        <div class="avatar-grid">
+            <div class="avatar-card" onclick="selectAvatar('character 1.png', this)">
+                <img src="character 1.png">
+            </div>
+            <div class="avatar-card" onclick="selectAvatar('character 2.png', this)">
+                <img src="character 2.png">
+            </div>
+            <div class="avatar-card" onclick="selectAvatar('character 3.png', this)">
+                <img src="character 3.png">
+            </div>
+        </div>
+
+        <div id="avatarNameEntry">
+            <input type="text" id="playerAvatarName" placeholder="Enter Name..." maxlength="10">
+        </div>
+
+        <button class="back-btn" onclick="goBack()">⬅ BACK</button>
+        <button id="avatarReadyBtn" class="ready-btn" style="display: none;" onclick="startAvatarGame()">READY! ➜</button>
+    </div>
+<script>
+        let chosenAvatar = "";
+        let cameraActive = false; // This is our safety lock!
+
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('photoCanvas');
+        const photoPreview = document.getElementById('photoPreview');
+        const snapBtn = document.getElementById('snapBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const nameEntry = document.getElementById('nameEntry');
+        const readyBtn = document.getElementById('readyBtn');
+
+    function startCamera() {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { 
+                video.srcObject = stream; 
+                cameraActive = true; // Camera is officially working!
+            })
+            .catch(err => { 
+                alert("Oops! We need camera access to take your photo. Enable it via the camera icon, then try again.");
+                cameraActive = false;
+                goBack(); // Send them back to the welcome screen
+            });
+    }
+
+    function showSection(sectionId) {
+        // Hide the main menu
+        document.getElementById('choiceMenu').style.display = 'none';
+        
+        // Show the new section using flex to keep everything centered
+        const section = document.getElementById(sectionId);
+        section.style.display = 'flex'; 
+
+        if(sectionId === 'cameraSection') startCamera();
+    }
+
+        function goBack() { location.reload(); }
+
+        function selectAvatar(imagePath, element) {
+        // Reset all cards
+        document.querySelectorAll('.avatar-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Highlight the chosen one
+        element.classList.add('selected');
+
+        // Save the filename
+        chosenAvatar = imagePath; 
+
+        // Show the ready button in the corner
+        document.getElementById('avatarReadyBtn').style.display = 'block';
+    }
+
+    snapBtn.addEventListener('click', () => {
+        if (!cameraActive) return alert("Camera is not active!");
+
+        const context = canvas.getContext('2d');
+        const vW = video.videoWidth;
+        const vH = video.videoHeight;
+        if (vW === 0) return; 
+        
+        const size = Math.min(vW, vH);
+        const xOffset = (vW - size) / 2;
+        const yOffset = (vH - size) / 2;
+
+        context.drawImage(video, xOffset, yOffset, size, size, 0, 0, 250, 250);
+
+        document.querySelector('.camera-tip').style.display = "none";
+
+        video.style.display = "none"; 
+        photoPreview.style.display = "block";
+
+        chosenAvatar = canvas.toDataURL('image/png');
+
+        photoPreview.src = chosenAvatar;
+        
+        chosenAvatar = canvas.toDataURL('image/png');
+        photoPreview.src = chosenAvatar;
+
+        video.style.display = "none"; 
+        photoPreview.style.display = "block";
+        snapBtn.style.display = "none";
+        retakeBtn.style.display = "block";
+        nameEntry.style.display = "block";
+        readyBtn.style.display = "block";
+    });
+
+    retakeBtn.addEventListener('click', () => {
+        video.style.display = "block";
+        photoPreview.style.display = "none";
+        snapBtn.style.display = "flex";
+        retakeBtn.style.display = "none";
+        nameEntry.style.display = "none";
+        readyBtn.style.display = "none";
+
+        document.querySelector('.camera-tip').style.display = "block";
+
+        video.style.display = "block";
+        photoPreview.style.display = "none";
+    });
+
+    function startGame() {
+        let name = document.getElementById("playerName").value;
+        if (!name.trim()) {
+            alert("Please enter your name!");
+            return;
+        }
+        localStorage.setItem("playerName", name);
+        localStorage.setItem("playerAvatar", chosenAvatar);
+        window.location.href = "page3.html";
+    }
+
+    function selectAvatar(imagePath, element) {
+    // Reset all cards
+    document.querySelectorAll('.avatar-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Highlight the chosen one
+    element.classList.add('selected');
+
+    // Save the filename to the global variable
+    chosenAvatar = imagePath; 
+
+    // Show name entry and ready button
+    document.getElementById('avatarNameEntry').style.display = 'flex';
+    document.getElementById('avatarReadyBtn').style.display = 'block';
+    }
+
+function startAvatarGame() {
+    let name = document.getElementById("playerAvatarName").value;
+    if (!name.trim()) return alert("Enter your name first!");
+    
+    localStorage.setItem("playerName", name);
+    localStorage.setItem("playerAvatar", chosenAvatar); // Stores the image path
+    window.location.href = "page3.html";
+    }
+</script>
+</body>
+</html>

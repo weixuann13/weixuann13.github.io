@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Level 2 - Digital Dangers</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            width: 960px;
+            height: 540px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: 'Verdana', sans-serif;
+
+            background: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.11)),    
+                        url("background.png");
+            background-size: 100% 120%;
+            background-repeat: no-repeat;
+            background-position: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .player-status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex; /* Change back to flex so it's visible in the background */
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 40px;
+            border: 3px solid #000;
+            z-index: 10; 
+            cursor: pointer;
+        }
+
+        #introContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%; /* Fixes the 'squished' box */
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* Darker dim looks cleaner */
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* Keeps K8 at the bottom */
+            pointer-events: auto;     
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .money-row { color: #2ecc71; font-family: 'Bungee', sans-serif; }
+
+        .mini-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #000;
+            background: #fff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #playerFace {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the photo fills the circle without stretching */
+        }
+
+        #playerName {
+            font-family: 'Bungee', cursive;
+            font-size: 18px;
+            margin-bottom: -5px; 
+        }
+
+        #playerMoney {
+            font-family: 'Bungee', cursive;
+        }
+
+        .game-card {
+            display: none; /* Hide the quiz until the button is clicked */
+            background: white; 
+            width: 450px; 
+            border: 5px solid #ff1493;
+            border-radius: 20px; 
+            padding: 15px 25px; 
+            text-align: center; 
+            box-shadow: 10px 10px 0px #000;
+            font-family: 'Verdana', sans-serif;
+            z-index: 5; 
+        }
+
+        .logo-row { display: flex; justify-content: center; gap: 20px; margin: 20px 0; }
+        .logo-option {
+            border: 3px solid #eee; border-radius: 15px; padding: 10px; cursor: pointer; width: 140px;
+        }
+        .logo-option:hover { border-color: #ff1493; background: #fff0f5; }
+        .logo-img { width: 100%; height: auto; border-radius: 10px; }
+        
+        .btn {
+            font-family: 'Bungee'; padding: 10px 20px; border: 3px solid #000;
+            border-radius: 10px; cursor: pointer; background: #2ecc71; display: none; margin: 0 auto;
+        }
+
+        /* The Guide's Dialogue Box */
+        .guide-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            width: 900px;
+            margin-bottom: 20px;
+            gap: 10px;
+            
+            opacity: 0; 
+            transform: translateX(-100px); 
+        }
+
+        .guide-wrapper.active {
+            animation: k8SlideIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            animation-delay: 0s; /* Set to 0s for instant response */
+        }
+
+        #quizCard, #hud {
+            display: none; 
+        }
+
+        @keyframes slideFromLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* K8 slides in from the left with a 'bounce' at the end */
+        @keyframes k8SlideIn {
+            0% { 
+                transform: translateX(-200px); 
+                opacity: 0; 
+            }
+            100% { 
+                transform: translateX(0); 
+                opacity: 1; 
+            }
+        }
+
+        /* 2. Level Splash Screen */
+        @keyframes splashFade {
+            0% { 
+                opacity: 1; 
+            }
+            70% { 
+                opacity: 1; 
+                transform: scale(1); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: scale(1.2); 
+                visibility: hidden; 
+            }
+        }
+
+        .guide-container {
+            position: relative;
+            flex-grow: 1;
+            margin-bottom: 40px;
+            background: white;
+            border: 4px solid #000;
+            border-radius: 20px;
+            padding: 25px 40px;
+            box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.214);
+
+            min-height: 120px; 
+            max-width: 650px;
+        }
+
+        .guide-character {
+            width: 220px; 
+            flex-shrink: 0; /* Prevents the character from getting squished */
+            margin-left: 30px;
+            margin-right: -20px; /* Slight overlap with the box for depth */
+            z-index: 1001;
+        }
+
+        .guide-character img {
+            width: 80%;
+            height: auto;
+            display:block;
+        }
+
+        .guide-text {
+            display: flex;
+            flex-direction: column; /* Stacks the name over the dialogue */
+            gap: 5px; /* Space between "GUIDE:" and the message */
+            font-size: 18px;
+            line-height: 1.4;
+            white-space: pre-line;
+        }
+
+        .guide-text strong {
+            color: #ff1493; /* Makes the "GUIDE:" label slightly different if you want */
+            font-size: 22px; /* Slightly smaller label */
+            text-transform: uppercase;
+            display: block;
+        }
+
+        .next-hint {
+            position: absolute;
+            right: 20px;
+            bottom: 12px; 
+            font-family: 'Bungee', sans-serif;
+            font-size: 12px;
+            color: #888; /* Grey looks cleaner for a hint */
+            display: block;
+            animation: hintBounce 1s infinite;
+        }
+
+        #startGameBtn {
+            display: none; 
+            position: absolute; 
+            right: 25px; 
+            bottom: 12px; 
+            font-family: 'Bungee'; 
+            background: #2ecc71; 
+            border: 3px solid #000; 
+            padding: 8px 20px; /* Made it slightly bigger by default too */
+            cursor: pointer; 
+            border-radius: 10px;
+            box-shadow: 4px 4px 0px #000;
+            transition: transform 0.2s ease, background 0.2s ease; 
+            z-index: 5000; 
+            pointer-events: auto;
+        }
+
+        #startGameBtn:hover {
+            background: #27ae60; /* Slightly darker green on hover */
+            transform: scale(1.1); /* This makes it 10% bigger */
+        }
+
+        #startGameBtn:active {
+            transform: scale(0.95); /* Shrinks slightly when clicked for a 'button press' feel */
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        @keyframes gamePop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: gamePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        #timerDisplay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 40px;
+            border: 3px solid #000;
+            font-family: 'Bungee';
+            z-index: 100; 
+            display: none;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #linkOptions div:hover {
+            background-color: #f8f9fa !important;
+            border-color: #ff1493 !important;
+            transform: translateY(-2px);
+            transition: 0.2s;
+        }
+
+        #fadeOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: black;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            pointer-events: none; /* Allows clicks to pass through when invisible */
+            z-index: 9999;
+        }
+
+        /* When we add this class via JS, it fades to black */
+        .fade-out-active {
+            opacity: 1 !important;
+        }
+
+    </style>
+</head>
+<body> 
+    <div id="fadeOverlay"></div>
+    <audio id="tickSound" src="tick.mp3" preload="auto"></audio>
+    <audio id="buzzerSound" src="buzzer.mp3" preload="auto"></audio>
+    <audio id="correctSound" src="correct-answer.mp3" preload="auto"></audio>
+
+    <div class="player-status" id="hud" style="display:none;">
+        <div class="mini-avatar"><img id="playerFace" src="pfp 1.png"></div> 
+        <div class="stats-text">
+            <div id="playerName">Y</div>
+            <div class="money-row">💰 <span id="playerMoney">$1,000</span></div>
+        </div>
+    </div>
+
+    <div id="timerDisplay">
+        ⏱️ <span id="seconds">15</span>s
+    </div>
+
+    <div class="game-card" id="quizCard" style="display:none; width: 500px;">
+        <h2 style="font-family: 'Bungee'; color: #ff1493; margin-bottom: 10px;">WHICH LINK IS THE SCAM?</h2>
+        <p style="font-size: 14px; margin-bottom: 20px;">K8: "Look closely at the characters. Scammers love to swap letters!"</p>
+        
+        <div id="linkOptions" style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+            </div>
+
+        <div id="feedback" style="font-family: 'Bungee'; margin-top: 20px; min-height: 40px;"></div>
+        <button id="nextBtn" class="btn" onclick="handleNextButton()" style="margin-top: 10px;">NEXT CHALLENGE -></button>
+    </div>
+
+    <div id="introContainer">
+        <div class="guide-wrapper">
+            <div class="guide-character">
+                <img src="K8.png" alt="K8 Guide">
+            </div>
+            <div class="guide-container" id="k8Box">
+                <div class="guide-text">
+                    <strong>K8</strong>
+                    <span id="k8Dialogue"></span>
+                </div>
+                <div id="k8NextHint" class="next-hint">TAP TO CONTINUE >></div>
+                <button id="startGameBtn" onclick="actuallyStartGame(event)">READY!</button>
+            </div>
+        </div>
+    </div>
+<script>
+    const savedName = localStorage.getItem("playerName") || "Shopper";
+    const avatarChoice = localStorage.getItem("playerAvatar") || "pfp 1.png";
+    const name = savedName.charAt(0).toUpperCase() + savedName.slice(1);
+
+    // 1. Get the actual balance from the previous level
+    let currentBalance = parseInt(localStorage.getItem("playerMoney")) || 1000;
+    
+    // 2. Get the checkpoint (what you SHOULD have if you didn't get scammed)
+    // If no checkpoint exists (first time), set it to 1000
+    if (!sessionStorage.getItem("lvl2Checkpoint")) {
+        sessionStorage.setItem("lvl2Checkpoint", 1000);
+    }
+    let startingMoney = parseInt(sessionStorage.getItem("lvl2Checkpoint"));
+   
+    let money = currentBalance; 
+
+    let currentIntroLine = 0; 
+    // Set the first item to an empty string for now; we will fill it in window.onload
+    const introLines = [
+        "", 
+        "Scammers often use 'Look-alike' links by changing one letter. (Note: These are fictional examples for practice!)",
+        "Your next test is to spot the SCAM link among the real ones within 15 seconds!",
+        "Look very closely at every character. If you click a scam, you lose $100.\n\nReady to start?"
+    ];
+
+    let typingTimer; 
+    let isTyping = false; 
+    let currentFullText = ""; 
+
+    function typeWriter(text, elementId) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = ""; 
+        currentFullText = text; 
+        isTyping = true; 
+        
+        const hint = document.getElementById("k8NextHint");
+        const startBtn = document.getElementById("startGameBtn");
+
+        // Force the hint ON and the button OFF whenever a new line starts typing
+        hint.style.display = "block";
+        startBtn.style.display = "none";
+
+        clearTimeout(typingTimer); 
+
+        let i = 0;
+        function type() {
+            if (i < text.length) {
+                element.innerHTML += text.charAt(i);
+                i++;
+                typingTimer = setTimeout(type, 15); 
+            } else {
+                finishTypingLogic();
+            }
+        }
+        type();
+    }
+
+    function finishTypingLogic() {
+        clearTimeout(typingTimer);
+        isTyping = false;
+        document.getElementById("k8Dialogue").innerText = currentFullText;
+        
+        const startBtn = document.getElementById("startGameBtn");
+        const hint = document.getElementById("k8NextHint");
+
+        if (finishLines.length > 0) {
+            // If we are at the end of the finish sequence
+            if (currentFinishLine === finishLines.length - 1) {
+                startBtn.style.display = "block";
+                hint.style.display = "none";
+            } else {
+                startBtn.style.display = "none";
+                hint.style.display = "block";
+            }
+        } else {
+            // Intro logic
+            if (currentIntroLine === introLines.length - 1) {
+                startBtn.style.display = "block";
+                hint.style.display = "none";
+            }
+        }
+    }
+
+    function nextK8Dialog() {
+        // If typing, finish instantly
+        if (isTyping) {
+            finishTypingLogic();
+            return; 
+        }
+
+        // Move to next line
+        if (currentIntroLine < introLines.length - 1) {
+            currentIntroLine++;
+            typeWriter(introLines[currentIntroLine], "k8Dialogue");
+        } 
+    }
+
+    let timeLeft = 15;
+    let countdown;
+
+    function playTick() {
+        const tick = document.getElementById("tickSound");
+        const newTick = tick.cloneNode(); // Creates a "ghost" copy to play
+
+        newTick.volume = 0.1;
+        newTick.play().catch(e => console.log("Audio blocked"));
+        
+        // Clean up the ghost copy after 1 second so it doesn't lag the game
+        setTimeout(() => { newTick.remove(); }, 1000);
+    }
+
+    function startTimer() {
+        timeLeft = 15;
+        const tick = document.getElementById("tickSound");
+        
+        // Reset and play the 15-second track once
+        tick.pause();
+        tick.currentTime = 0;
+        tick.play().catch(e => console.log("Audio waiting for user click"));
+
+        document.getElementById("seconds").innerText = timeLeft;
+        document.getElementById("seconds").parentElement.style.color = "#000"; 
+        
+        clearInterval(countdown);
+        countdown = setInterval(() => {
+            timeLeft--;
+            
+            if (timeLeft >= 0) {
+                document.getElementById("seconds").innerText = timeLeft;
+            }
+
+            if (timeLeft <= 5 && timeLeft > 0) {
+                document.getElementById("seconds").parentElement.style.color = "#e74c3c";
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                // Wait 500ms before pausing so the last tick isn't cut off
+                setTimeout(() => {
+                    tick.pause();
+                }, 500); 
+                timeUp(); 
+            }
+        }, 1000);
+    }
+
+    function revealResults() {
+        const allLinks = document.querySelectorAll(".link-item");
+        document.getElementById("linkOptions").style.pointerEvents = "none";
+
+        allLinks.forEach(link => {
+            if (link.dataset.isScam === "true") {
+                link.style.borderColor = "#e74c3c"; 
+                link.style.backgroundColor = "#ffebee";
+                link.style.color = "#e74c3c";
+                link.innerText = "❌ " + link.innerText;
+            } else {
+                link.style.borderColor = "#2ecc71"; 
+                link.style.backgroundColor = "#f0fff4";
+                link.style.color = "#2ecc71";
+                link.innerText = "✅ " + link.innerText;
+            }
+        });
+    }
+
+    function timeUp() {
+        const buzzerSfx = document.getElementById("buzzerSound");
+        const feedback = document.getElementById("feedback");
+        const nextBtn = document.getElementById("nextBtn");
+        const currentTip = linkChallenges[currentRound].tip; // Get current tip
+        
+        clearInterval(countdown);
+        
+        // Styled tip for the timeout
+        const styledTip = `<div style="font-family: 'Verdana', sans-serif; line-height: 1.2; margin-top: 8px;">
+                            <strong style="color: #ff1493; text-transform: uppercase; font-size: 13px; display: block;">K8'S TIP:</strong>
+                            <span style="font-size: 13px; color: #333;">${currentTip}</span>
+                           </div>`;
+
+        feedback.innerHTML = `<span style="font-size: 16px;">⏰ TIME'S UP! THE SCAM IS MARKED WITH ❌</span>${styledTip}`;
+        feedback.style.color = "#e74c3c";
+        
+        money = Math.max(0, money - 100);
+        document.getElementById("playerMoney").innerText = "$" + money.toLocaleString();
+        localStorage.setItem("playerMoney", money);
+        
+        revealResults(); 
+        nextBtn.style.display = "block";
+    }
+
+        let currentRound = 0;
+    const linkChallenges = [
+        {
+            title: "Round 1: The 'Look-Alike' Swap",
+            links: [
+                { url: "ringtel.com.sg", isScam: false },
+                { url: "ringteI.com.sg", isScam: true }, // Capital 'I' instead of 'l'
+                { url: "support.ringtel.sg", isScam: false }
+            ],
+            tip: "Scammers swap 'l' with 'I' or 'o' with '0' because they look the same!"
+        },
+        {
+            title: "Round 2: The Hyphen Trick",
+            links: [
+                { url: "www.goggle-search.com", isScam: true }, // Hyphenated domains are often fake
+                { url: "www.goggle.com", isScam: false },
+                { url: "www.goggle.com/search", isScam: false }
+            ],
+            tip: "While some real sites use dashes, scammers LOVE them to make fake names. When in doubt, stick to the simple official domain!"
+        },
+        {
+        title: "Round 3: The Subdomain Sneak",
+            links: [
+                { url: "www.signpost.com.sg/login", isScam: false },
+                { url: "signpost.verification-portal.com", isScam: true }, // THE SCAM
+                { url: "login.signpost.com.sg", isScam: false }
+            ],
+            tip: "Always check the main domain name. Scammers often place trusted names before their own domains to trick you."
+        }
+    ];
+
+    function loadLinkChallenge() {
+        const challenge = linkChallenges[currentRound];
+        const container = document.getElementById("linkOptions");
+        const feedback = document.getElementById("feedback");
+        const nextBtn = document.getElementById("nextBtn");
+
+        container.innerHTML = "";
+        feedback.innerHTML = "";
+        nextBtn.style.display = "none";
+
+        challenge.links.forEach((linkObj, index) => {
+            const btn = document.createElement("div");
+            btn.className = "link-item"; // We'll use this for easy selection
+            btn.style.cssText = `
+                background: #fff;
+                border: 4px solid #000;
+                border-radius: 12px;
+                padding: 15px;
+                cursor: pointer;
+                font-family: 'Verdana', sans-serif; /* Cleaner Sans-Serif Font */
+                font-size: 19px;
+                font-weight: bold;
+                color: #2ecc71; /* Green links look "official" */
+                transition: all 0.2s;
+            `;
+            btn.innerText = linkObj.url;
+            // Store the scam status on the element for the highlighter
+            btn.dataset.isScam = linkObj.isScam; 
+            btn.onclick = () => checkLink(linkObj.isScam, challenge.tip);
+            container.appendChild(btn);
+        });
+    }
+
+    function checkLink(clickedIsScam, tip) {
+        document.getElementById("tickSound").pause();
+        const feedback = document.getElementById("feedback");
+        const nextBtn = document.getElementById("nextBtn");
+        
+        const buzzerSfx = document.getElementById("buzzerSound");
+        const correctSfx = document.getElementById("correctSound"); // Your new sound!
+
+        clearInterval(countdown);
+        revealResults(); 
+
+        if (clickedIsScam) {
+            // --- SUCCESS! ---
+            if(correctSfx) {
+                correctSfx.volume = 0.3;
+                correctSfx.currentTime = 0;
+                correctSfx.play();
+            }
+            
+            feedback.innerHTML = `<span style="font-size: 16px;">🎯 BOOM! YOU CAUGHT THE ❌ SCAM.</span>`;
+            feedback.style.color = "#2ecc71";
+            confetti({ particleCount: 150, spread: 70 });
+
+        } else {
+            // --- FAILURE ---
+            if(buzzerSfx) {
+                buzzerSfx.volume = 0.15;
+                buzzerSfx.currentTime = 0;
+                buzzerSfx.play();
+            }
+
+            feedback.innerHTML = `<span style="font-size: 16px;">❌ OUCH! THAT WAS A ✅ SAFE LINK.</span>`;
+            feedback.style.color = "#e74c3c";
+            
+            money = Math.max(0, money - 100);
+            document.getElementById("playerMoney").innerText = "$" + money.toLocaleString();
+            localStorage.setItem("playerMoney", money);
+        }
+
+        nextBtn.style.display = "block";
+    }
+
+    function handleNextButton() {
+        confetti.reset();
+        
+        if (currentRound < linkChallenges.length - 1) {
+            currentRound++;
+            document.getElementById("linkOptions").style.pointerEvents = "auto";
+            loadLinkChallenge();
+            startTimer();
+        } else {
+            // Instead of an alert, we bring K8 back!
+            showLevelComplete();
+        }
+    }
+
+    function actuallyStartGame(event) {
+            if (event) event.stopPropagation(); 
+
+            const wrapper = document.querySelector(".guide-wrapper");
+            wrapper.style.transition = "transform 0.5s ease-in, opacity 0.5s";
+            wrapper.style.transform = "translateX(-100%)";
+            wrapper.style.opacity = "0";
+
+            setTimeout(() => {
+                document.getElementById("introContainer").style.display = "none";
+                document.getElementById("quizCard").style.display = "block";
+                document.getElementById("hud").style.display = "flex";
+                document.getElementById("timerDisplay").style.display = "flex";
+                
+                loadLinkChallenge(); // ADD THIS LINE: It builds the links!
+                startTimer(); 
+            }, 500);
+        }
+
+    function loadNewLogo() {
+        const challenge = logoChallenges[currentLogoIndex];
+        const images = document.querySelectorAll(".logo-img");
+        
+        // Update images (A is index 0, B is index 1)
+        images[0].src = challenge.real;
+        images[1].src = challenge.fake;
+
+        // Reset UI
+        document.getElementById("feedback").innerHTML = "";
+        document.getElementById("nextBtn").style.display = "none";
+        document.querySelectorAll('.logo-option').forEach(el => el.style.pointerEvents = 'auto');
+        
+        startTimer(); // Restart the 15s clock
+    }
+
+       let finishLines = [];
+    let currentFinishLine = 0;
+
+    function showLevelComplete() {
+    const intro = document.getElementById("introContainer");
+    const startBtn = document.getElementById("startGameBtn");
+    const hint = document.getElementById("k8NextHint");
+    const wrapper = document.querySelector(".guide-wrapper");
+    const finalScore = document.getElementById("playerMoney").innerText;
+
+    currentFinishLine = 0; 
+
+    finishLines = [
+        `Game Complete! You finished with ${finalScore}.`,
+        "But in the real world, the stakes are much higher than a game.",
+        "In 2025, victims in Singapore lost over S$840.3 million to more than 33,800 reported scam cases.",
+        "That's over $2 million lost every single day! 😱",
+        "Phishing scams, like the links you just saw are one of the top 3 most common cases.",
+    ];
+
+    // --- THE FIX: Reset the styles so it's visible again ---
+    intro.style.display = "flex";
+    intro.style.opacity = "1"; 
+    
+    // Clear the manual transform/opacity from 'actuallyStartGame'
+    wrapper.style.transform = ""; 
+    wrapper.style.opacity = "";
+    wrapper.classList.remove("active");
+
+    startBtn.style.display = "none"; 
+    hint.style.display = "block";
+
+    // Small delay to let the browser register the class removal before adding it back
+    setTimeout(() => {
+        wrapper.classList.add("active");
+        typeWriter(finishLines[0], "k8Dialogue");
+    }, 100);
+}
+
+    function nextFinishDialog() {
+        const startBtn = document.getElementById("startGameBtn");
+        const hint = document.getElementById("k8NextHint");
+
+        if (isTyping) {
+            finishTypingLogic();
+            return;
+        }
+
+        if (currentFinishLine < finishLines.length - 1) {
+            currentFinishLine++;
+            typeWriter(finishLines[currentFinishLine], "k8Dialogue");
+        }
+
+                if (currentFinishLine === finishLines.length - 1) {
+            const startBtn = document.getElementById("startGameBtn");
+            startBtn.innerText = "FINISH GAME";
+            startBtn.style.display = "block";
+            
+            startBtn.onclick = function() {
+                const overlay = document.getElementById("fadeOverlay");
+                
+                // 1. Start the fade to black
+                overlay.classList.add("fade-out-active");
+                
+                // 2. Wait for the CSS transition (0.8s) then switch pages
+                setTimeout(() => {
+                    window.location.href = "finishgame.html";
+                }, 800); 
+            };
+        }
+    }
+
+    window.onload = function() {
+        // 1. Update HUD
+        document.getElementById("playerMoney").innerText = "$" + money.toLocaleString();
+        document.getElementById("playerName").innerText = name;
+        
+        // 2. Avatar Logic
+        const faceImg = document.getElementById("playerFace");
+        if (avatarChoice.startsWith("data:image")) {
+            faceImg.src = avatarChoice;
+            faceImg.style.transform = "scaleX(-1)"; 
+        } else {
+            if (avatarChoice.includes("3")) faceImg.src = "pfp 3.png"; 
+            else if (avatarChoice.includes("2")) faceImg.src = "pfp 2.png";
+            else faceImg.src = "pfp 1.png";
+        }
+
+        // 3. DYNAMIC FIRST LINE CALCULATION
+        // We define the variable "firstLine" here...
+        let firstLine = "";
+        
+        // We check the numbers strictly
+        if (currentBalance < 1000) {
+            firstLine = "Ouch, that scam was tricky, wasn't it? There was a small X button to close the prize! At least now you know what to look for!";
+        } else {
+            // Player balance is perfect
+            firstLine = "Great job staying vigilant! You didn't fall for that fake wheel and kept your savings intact.";
+        }
+
+        // --- THE FIX IS HERE ---
+        // You were using 'dynamicFirstLine' (which didn't exist). 
+        // We changed it to match 'firstLine' created above.
+        introLines[0] = firstLine; 
+
+        // 4. Click Handler
+        document.getElementById("k8Box").onclick = function() {
+            if (finishLines && finishLines.length > 0) {
+                nextFinishDialog();
+            } else {
+                nextK8Dialog();
+            }
+        };
+
+        // 5. Start Animation
+        const wrapper = document.querySelector(".guide-wrapper");
+        wrapper.classList.add("active");
+
+        setTimeout(() => {
+            // Now introLines[0] has the correct text!
+            typeWriter(introLines[0], "k8Dialogue");
+        }, 400);
+    };
+    </script>
+</body>
+</html>
